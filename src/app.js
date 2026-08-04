@@ -1,8 +1,10 @@
 import express from "express"
+import bcrypt from "bcrypt"
 
 import connectDB from "./config/database.js"
 
   import User from "./models/user.js"
+  import validateSignUpData from "./utils/validation.js"
 
 
 const app = express()
@@ -121,10 +123,22 @@ app.use(express.json())
 
 
 app.post("/signup",async (req,res)=>{
-    
-    try{
-    const user = new User (req.body)
 
+
+     try{
+    
+    
+   validateSignUpData(req)
+  const {firstName,lastname, emailId,password } = req.body
+
+  const passwordHash = await bcrypt.hash(password,10)
+
+    const user = new User ({
+        firstName,
+        lastName,
+        emailId,
+        password:passwordHash
+    })
     await user.save()
 
     res.send("user Added successfully")
@@ -133,6 +147,31 @@ catch (err){
     console.error(err)
   res.status(500).send(err.message);
 }
+})
+
+app.post("/login",(req,res)=>{
+
+    try{
+
+        const {emailId,password}= req.body;
+       
+        const user = await User.findOne({emailId: emailId})
+      
+        if(!user){
+            throw new Error ("Invalid Credentials")
+        }
+
+
+        const isPasswordValid = await bcrypt.compare(password, user.password )
+
+        if (isPasswordValid){
+            res.send("Invalid Credentials")
+        }
+
+    }
+    catch{
+           res.status(400).send(err.message)
+    }
 })
 
 app.get("/user", async(req,res)=>{
