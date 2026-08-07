@@ -5,11 +5,14 @@ import connectDB from "./config/database.js"
 
   import User from "./models/user.js"
   import validateSignUpData from "./utils/validation.js"
-
+  import cookieParser from "cookie-parser"
+  import jsonwebtoken from "jsonwebtoken"
+  import userAuth from "./middlewares/auth.js"
 
 const app = express()
 
 app.use(express.json())
+app.use(cookieParser())
 
 // app.use("/test",(req,res)=>{
 //     res.send("server is testing on test endpoint ")
@@ -161,17 +164,63 @@ app.post("/login",(req,res)=>{
             throw new Error ("Invalid Credentials")
         }
 
-
-        const isPasswordValid = await bcrypt.compare(password, user.password )
+ const isPasswordValid = await user.validatePassword (password)
+        //const isPasswordValid = await bcrypt.compare(password, user.password )
 
         if (isPasswordValid){
-            res.send("Invalid Credentials")
+           //Create a JWT Token 
+
+           const token = await user.getJWT();
+            // const token = await jwt.sign({_id:user-_id},secretkey , {
+            //     expiresIn: "1d",
+            // })
+// Add the to cookie and send the response back to the user 
+            res.cookie("token",token,{expires: new Date (Date.now() + 8 *3600000) })
+            res.send("login sucessfully")
         }
+        else("Invalid credentials")
 
     }
-    catch{
+    catch{ 
            res.status(400).send(err.message)
     }
+})
+
+app.get("/profile",userAuth, async(req,res)=>{
+
+    try{
+
+        const user = req.user;
+
+        res.send(user)
+    }
+    catch (err){
+        res.status(400).send("ERROR : " + err.message)
+    }
+
+
+//    try{
+
+//      const cookie = req.cookies();
+//     const {token}= cookies;  
+//     if (!token){
+//         throw new Error ("Invalid Token")
+//     }
+//     const decodedMessage = await jwt.verify(token, secretkey)
+//     const {_id}= decodedMessage;
+
+//    // console.log("logged is user "+ _id)
+//     const user = await User.findById(_id);
+//     if(!user){
+//         throw new Error ("User does not exist")
+//     }
+//     res.send(user)
+
+//    }
+//    catch (err){
+//     res.status(400).send("ERROR:"+err.message)
+//    }
+    //console.log(cookie
 })
 
 app.get("/user", async(req,res)=>{
@@ -260,6 +309,13 @@ app.patch("/user/:userId", async(req,res)=>{
 })
 
 
+
+app.post ("/sendConnectionRequest ", userAuth , async (req,res)=>{
+    const user = req.user ;
+
+
+    res.send(user.firstName+ "connection request sent ")
+} )
 
 
 connectDB ().then(()=>{
