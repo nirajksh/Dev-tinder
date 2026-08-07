@@ -1,18 +1,33 @@
 import express from "express"
-import bcrypt from "bcrypt"
 
 import connectDB from "./config/database.js"
 
   import User from "./models/user.js"
-  import validateSignUpData from "./utils/validation.js"
   import cookieParser from "cookie-parser"
   import jsonwebtoken from "jsonwebtoken"
   import userAuth from "./middlewares/auth.js"
+
+  import authRouter from "./routes/auth.js"
+  import requestRouter from "./routes/requests.js"
+  import profileRouter from "./routes/profile.js"
 
 const app = express()
 
 app.use(express.json())
 app.use(cookieParser())
+
+// import the Router 
+
+ app.use("/",authRouter)
+ app.use("/",profileRouter)
+ app.use("/",requestRouter)
+
+
+
+ 
+
+
+
 
 // app.use("/test",(req,res)=>{
 //     res.send("server is testing on test endpoint ")
@@ -125,32 +140,6 @@ app.use(cookieParser())
 // })
 
 
-app.post("/signup",async (req,res)=>{
-
-
-     try{
-    
-    
-   validateSignUpData(req)
-  const {firstName,lastname, emailId,password } = req.body
-
-  const passwordHash = await bcrypt.hash(password,10)
-
-    const user = new User ({
-        firstName,
-        lastName,
-        emailId,
-        password:passwordHash
-    })
-    await user.save()
-
-    res.send("user Added successfully")
-}
-catch (err){
-    console.error(err)
-  res.status(500).send(err.message);
-}
-})
 
 app.post("/login",(req,res)=>{
 
@@ -309,13 +298,6 @@ app.patch("/user/:userId", async(req,res)=>{
 })
 
 
-
-app.post ("/sendConnectionRequest ", userAuth , async (req,res)=>{
-    const user = req.user ;
-
-
-    res.send(user.firstName+ "connection request sent ")
-} )
 
 
 connectDB ().then(()=>{
